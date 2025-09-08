@@ -365,6 +365,17 @@ pollingCenterDisplay.innerHTML = `
       // Submit results
       resultsForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+         const registeredVoters = parseInt(document.getElementById('registered-voters').value) || 0;
+  let totalPresidentialVotes = 0;
+  candidatesData.presidential.forEach(c => {
+    const val = parseInt(resultsForm.querySelector(`#presidential-${c.candidate_id}`).value) || 0;
+    totalPresidentialVotes += val;
+  });
+
+  if (totalPresidentialVotes > registeredVoters) {
+    showMessage("Cannot submit: total casted votes exceed registered voters.", true);
+    return;
+  }
         const originalBtnText = submitBtn.textContent;
         submitBtn.textContent = 'Submitting...';
         submitBtn.disabled = true;
