@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>ERMS Monitor App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f3f4f6;
+    }
+    .hidden {
+      display: none;
+    }
+    .collapse-section {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+    }
+    .collapse-section.open {
+      max-height: 1000px; /* Large enough */
+      padding: 1rem;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <div id="app-container" class="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden md:h-[90vh] flex flex-col">
+
+<!-- Banner -->
+<div class="relative w-full h-36 sm:h-44 md:h-52 lg:h-60 bg-blue-700">
+  <!-- Logo and title -->
+  <div class="absolute inset-0 flex items-center px-4 sm:px-8 md:px-12">
+    <img src="assets/logo.png" alt="Logo" 
+         class="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 lg:h-24 lg:w-24 mr-4 rounded-full shadow-lg border-2 border-white object-cover">
+    <h1 class="text-white text-xl sm:text-2xl md:text-4xl lg:text-5xl font-extrabold drop-shadow-lg">
+      ERMS - Malawi Elections 2025
+    </h1>
+  </div>
+</div>
+
+
+
+    <!-- App content -->
+    <div class="flex-grow p-6 overflow-y-auto">
+
+      <!-- Login Screen -->
+      <div id="login-screen">
+        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Monitor Login</h2>
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label for="login-id" class="block text-sm font-medium text-gray-700">Login ID</label>
+            <input type="text" id="login-id" name="loginId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+          </div>
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+            <input type="password" id="password" name="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+          </div>
+          <button type="submit" id="login-btn" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Login
+          </button>
+          <div id="login-message" class="text-center text-red-500 hidden"></div>
+        </form>
+      </div>
+
+      <!-- Main App -->
+      <div id="main-app" class="hidden">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Monitor Dashboard</h2>
+
+        <div class="bg-gray-100 p-4 rounded-lg text-center mb-4">
+          <p id="monitor-id-display" class="font-bold text-gray-700"></p>
+          <p id="polling-center-display" class="text-sm text-gray-500"></p>
+        </div>
+
+        <div class="flex justify-center mb-6">
+          <button id="check-in-btn" class="py-2 px-4 rounded-md shadow-lg text-lg font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            Check In
+          </button>
+        </div>
+
+        <!-- Results Form -->
+        <div id="submission-form-section" class="hidden">
+          <h3 class="text-xl font-bold text-gray-800 mb-4">Submit Results</h3>
+          <form id="results-form" class="space-y-6">
+            <div class="space-y-4">
+              <div>
+                <label for="registered-voters" class="block text-sm font-medium text-gray-700">Registered Voters</label>
+                <input type="number" id="registered-voters" name="registeredVoters" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+              </div>
+              <div>
+                <label for="nullified-votes" class="block text-sm font-medium text-gray-700">Nullified Votes</label>
+                <input type="number" id="nullified-votes" name="nullifiedVotes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+              </div>
+              <div>
+                <label for="invalid-votes" class="block text-sm font-medium text-gray-700">Invalid Votes</label>
+                <input type="number" id="invalid-votes" name="invalidVotes" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+              </div>
+            </div>
+
+            <div id="election-sections" class="space-y-8">
+              <p class="text-sm text-gray-500 text-center">Form fields will be loaded here after check-in.</p>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 mt-6">
+              <button type="submit" id="submit-all-btn" class="w-full py-3 px-4 rounded-lg shadow-lg text-lg font-bold text-white bg-gray-400 cursor-not-allowed" disabled>
+                Submit All Results
+              </button>
+              <button type="button" id="cancel-edit-btn" class="hidden bg-gray-400 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-500 transition duration-300">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- History -->
+        <div class="mt-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Submission History</h3>
+          <div id="submission-history" class="space-y-4">
+            <p class="text-sm text-gray-500 text-center">Loading submissions...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message Box -->
+  <div id="message-box" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
+      <p id="message-text" class="flex items-center justify-center gap-2 text-center font-medium"></p>
+      <button id="message-close-btn" class="mt-4 w-full bg-orange-500 text-white font-bold py-2 rounded-lg hover:bg-orange-600 transition duration-300">
+        OK
+      </button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const URL = window.location.hostname === "localhost"
+        ? "https://miwalletmw.com:8000"
+        : "https://miwalletmw.com:8000";
+
+      // Utility function to show custom message box
+      const showMessage = (message, isError = false) => {
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+        messageText.innerHTML = isError
+          ? `<span class="text-red-600">❌ ${message}</span>`
+          : `<span class="text-green-600">✅ ${message}</span>`;
+        messageBox.classList.remove('hidden');
+      };
+
+      document.getElementById('message-close-btn').addEventListener('click', () => {
+        document.getElementById('message-box').classList.add('hidden');
+      });
+
+      // State
+      let monitorId = null;
+      let pollingCenterId = null;
+      let candidatesData = {};
+
+      // UI elements
+      const loginScreen = document.getElementById('login-screen');
+      const mainAppScreen = document.getElementById('main-app');
+      const loginForm = document.getElementById('login-form');
+      const loginMessage = document.getElementById('login-message');
+      const loginBtn = document.getElementById('login-btn');
+      const monitorIdDisplay = document.getElementById('monitor-id-display');
+      const pollingCenterDisplay = document.getElementById('polling-center-display');
+      const checkInBtn = document.getElementById('check-in-btn');
+      const submissionFormSection = document.getElementById('submission-form-section');
+      const resultsForm = document.getElementById('results-form');
+      const submitBtn = document.getElementById('submit-all-btn');
+      const cancelEditBtn = document.getElementById('cancel-edit-btn');
+      const electionSectionsContainer = document.getElementById('election-sections');
+      const submissionHistoryContainer = document.getElementById('submission-history');
+
+      // Login
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        loginBtn.textContent = "Logging in...";
+        loginBtn.disabled = true;
+
+        const loginId = document.getElementById('login-id').value;
+        const password = document.getElementById('password').value;
+
+        loginMessage.classList.add('hidden');
+
+        try {
+          const response = await fetch(`${URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ loginId, password })
+          });
+          const data = await response.json();
+
+          if (response.ok) {
+// Assuming you already have `data` from login response
+monitorId = data.monitorId;
+pollingCenterId = data.pollingCenterId;
+const monitorName = data.monitorName; // new
+const constituencyId = data.constituencyId; // new
+const constituencyName = data.constituencyName; // new
+const districtId = data.districtId; // new
+const districtName = data.districtName; // new
+
+monitorIdDisplay.textContent = `Monitor ID: ${monitorId}`;
+
+pollingCenterDisplay.innerHTML = `
+  <p>Monitor: <span class="font-semibold">${monitorName}</span></p>
+  <p>Polling Center: <span class="font-semibold">${data.pollingCenterName}</span> (${pollingCenterId})</p>
+  <p>Constituency: <span class="font-semibold">${constituencyName}</span> (${constituencyId})</p>
+  <p>District: <span class="font-semibold">${districtName}</span> (${districtId})</p>
+`;
+
+
+
+            loginScreen.classList.add('hidden');
+            mainAppScreen.classList.remove('hidden');
+
+            fetchAndRenderSubmissions();
+          } else {
+            loginMessage.textContent = data.message || "Login failed.";
+            loginMessage.classList.remove('hidden');
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          loginMessage.textContent = 'Network error. Please try again.';
+          loginMessage.classList.remove('hidden');
+        } finally {
+          loginBtn.textContent = "Login";
+          loginBtn.disabled = false;
+        }
+      });
+
+      // Check-in
+      checkInBtn.addEventListener('click', async () => {
+        if (!monitorId) {
+          showMessage('Please log in first.', true);
+          return;
+        }
+        try {
+          const response = await fetch(`${URL}/checkin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ monitorId })
+          });
+          const data = await response.json();
+          if (response.ok) {
+            showMessage(data.message || "Checked in successfully.");
+            fetchCandidates();
+          } else {
+            showMessage(data.message || "Check-in failed.", true);
+          }
+        } catch (error) {
+          console.error('Check-in error:', error);
+          showMessage('An error occurred during check-in.', true);
+        }
+      });
+
+      // Fetch candidates
+      const fetchCandidates = async () => {
+        electionSectionsContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">Loading candidates...</p>';
+        try {
+          const response = await fetch(`${URL}/candidates/${pollingCenterId}`);
+          if (!response.ok) throw new Error('Failed to fetch candidates.');
+          const data = await response.json();
+          candidatesData = data.reduce((acc, candidate) => {
+            const type = candidate.election_type;
+            if (!acc[type]) acc[type] = [];
+            acc[type].push(candidate);
+            return acc;
+          }, {});
+          renderElectionForms();
+          submissionFormSection.classList.remove('hidden');
+        } catch (error) {
+          console.error('Candidate fetch error:', error);
+          showMessage('Could not fetch candidate data. Please check in again.', true);
+        }
+      };
+
+      // Render forms
+      const renderElectionForms = () => {
+        electionSectionsContainer.innerHTML = '';
+        const electionTypes = {
+          presidential: 'Presidential',
+          parliamentary: 'Parliamentary',
+          local_government: 'Local Government'
+        };
+
+        for (const type in electionTypes) {
+          const candidates = candidatesData[type] || [];
+          const sectionHtml = `
+            <div class="bg-gray-50 rounded-lg shadow-inner overflow-hidden transition-all duration-300">
+              <div class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-100" data-toggle="${type}-section">
+                <h4 class="font-bold text-gray-700">${electionTypes[type]} Votes</h4>
+                <svg class="w-5 h-5 text-gray-500 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+              </div>
+              <div id="${type}-section" class="collapse-section">
+                ${candidates.map(c => `
+                  <div class="flex items-center gap-2 mb-2">
+                    <label for="${type}-${c.candidate_id}" class="flex-1 text-sm text-gray-600">${c.candidate_name} (${c.party})</label>
+                    <input type="number" id="${type}-${c.candidate_id}" name="${type}-${c.candidate_id}" class="w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" required>
+                  </div>
+                `).join('')}
+                <div class="mt-4">
+                  <label for="${type}-image" class="block text-sm font-medium text-gray-700">Upload Result Sheet Image</label>
+                  <input type="file" id="${type}-image" accept="image/*" name="${type}Image" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                </div>
+              </div>
+            </div>
+          `;
+          electionSectionsContainer.innerHTML += sectionHtml;
+        }
+
+        // Attach listeners
+        resultsForm.querySelectorAll('input').forEach(input => {
+          input.addEventListener('input', checkFormStatus);
+          input.addEventListener('change', checkFormStatus);
+        });
+
+        document.querySelectorAll('[data-toggle]').forEach(header => {
+          header.addEventListener('click', () => {
+            const targetId = header.getAttribute('data-toggle');
+            const targetSection = document.getElementById(targetId);
+            const icon = header.querySelector('svg');
+            document.querySelectorAll('.collapse-section').forEach(section => {
+              if (section.id !== targetId) section.classList.remove('open');
+            });
+            document.querySelectorAll('[data-toggle] svg').forEach(svg => {
+              if (svg !== icon) svg.classList.remove('rotate-90');
+            });
+            targetSection.classList.toggle('open');
+            icon.classList.toggle('rotate-90');
+          });
+        });
+        checkFormStatus();
+      };
+
+      // Enable/disable submit
+      const checkFormStatus = () => {
+        const inputs = resultsForm.querySelectorAll('input[required]');
+        let allFilled = true;
+        inputs.forEach(input => {
+          if (input.type === 'file' && input.files.length === 0) {
+            allFilled = false;
+          } else if (input.type !== 'file' && !input.value) {
+            allFilled = false;
+          }
+        });
+
+        if (allFilled) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+          submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        } else {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+          submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        }
+      };
+
+      // Submit results
+      resultsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+
+        const formData = new FormData(resultsForm);
+        formData.append('monitorId', monitorId);
+        formData.append('pollingCenterId', pollingCenterId);
+
+        const votes = {};
+        for (const key in candidatesData) {
+          candidatesData[key].forEach(candidate => {
+            const inputName = `${key}-${candidate.candidate_id}`;
+            votes[inputName] = formData.get(inputName);
+          });
+        }
+        formData.append('votes', JSON.stringify(votes));
+
+        try {
+          const response = await fetch(`${URL}/submit-results`, {
+            method: 'POST',
+            body: formData
+          });
+          const data = await response.json();
+          if (response.ok) {
+            showMessage(data.message || "Results submitted.");
+            resultsForm.reset();
+            // Manually clear file inputs
+            resultsForm.querySelectorAll('input[type="file"]').forEach(f => f.value = "");
+            fetchAndRenderSubmissions();
+          } else {
+            showMessage(data.message || "Submission failed.", true);
+          }
+        } catch (error) {
+          console.error('Submission error:', error);
+          showMessage('An error occurred during submission. Please try again.', true);
+        } finally {
+          submitBtn.textContent = originalBtnText;
+          checkFormStatus();
+        }
+      });
+
+      // Fetch history
+      const fetchAndRenderSubmissions = async () => {
+        submissionHistoryContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">Loading submissions...</p>';
+        try {
+          const response = await fetch(`${URL}/submissions/${monitorId}`);
+          if (!response.ok) throw new Error('Failed to fetch submissions.');
+          const data = await response.json();
+          renderSubmissionHistory(data);
+        } catch (error) {
+          console.error('History fetch error:', error);
+          submissionHistoryContainer.innerHTML = '<p class="text-sm text-red-500 text-center">Could not load submissions.</p>';
+        }
+      };
+
+      const renderSubmissionHistory = (submissions) => {
+        if (!submissions.length) {
+          submissionHistoryContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No submissions yet.</p>';
+          return;
+        }
+        submissionHistoryContainer.innerHTML = submissions.map(sub => `
+          <div class="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <p class="text-sm text-gray-700"><span class="font-semibold">Election:</span> ${sub.election}</p>
+<p class="text-sm text-gray-700"><span class="font-semibold">Timestamp:</span> ${new Date(sub.timestamp).toLocaleString()}</p>
+            <p class="text-sm text-gray-700"><span class="font-semibold">Status:</span>
+              <span class="font-bold ${sub.status === 'approved' ? 'text-green-600' : sub.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}">${sub.status}</span>
+            </p>
+          </div>
+        `).join('');
+      };
+    });
+  </script>
+</body>
+</html>
