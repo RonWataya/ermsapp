@@ -110,6 +110,20 @@
     </div>
   </div>
 
+<div id="confirmation-box" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+  <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm text-center">
+    <p id="confirmation-text" class="text-red-600 font-bold mb-4"></p>
+    <div class="flex justify-around gap-4">
+      <button id="confirm-submit-btn" class="flex-1 py-2 px-4 rounded-lg shadow-sm font-bold text-white bg-green-600 hover:bg-green-700">
+        Submit Anyway
+      </button>
+      <button id="cancel-submit-btn" class="flex-1 py-2 px-4 rounded-lg shadow-sm font-bold text-gray-700 bg-gray-200 hover:bg-gray-300">
+        Go Back
+      </button>
+    </div>
+  </div>
+</div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const URL = window.location.hostname === "localhost"
@@ -127,6 +141,31 @@
       document.getElementById('message-close-btn').addEventListener('click', () => {
         document.getElementById('message-box').classList.add('hidden');
       });
+
+      // New function to show confirmation dialog
+      const showConfirmation = (message, onConfirm, onCancel) => {
+        const confirmationBox = document.getElementById('confirmation-box');
+        document.getElementById('confirmation-text').textContent = message;
+        confirmationBox.classList.remove('hidden');
+        const confirmBtn = document.getElementById('confirm-submit-btn');
+        const cancelBtn = document.getElementById('cancel-submit-btn');
+
+        const confirmHandler = () => {
+          onConfirm();
+          confirmationBox.classList.add('hidden');
+          confirmBtn.removeEventListener('click', confirmHandler);
+          cancelBtn.removeEventListener('click', cancelHandler);
+        };
+        const cancelHandler = () => {
+          onCancel();
+          confirmationBox.classList.add('hidden');
+          confirmBtn.removeEventListener('click', confirmHandler);
+          cancelBtn.removeEventListener('click', cancelHandler);
+        };
+
+        confirmBtn.addEventListener('click', confirmHandler);
+        cancelBtn.addEventListener('click', cancelHandler);
+      };
 
       let monitorId = null;
       let pollingCenterId = null;
@@ -251,110 +290,149 @@
               <div class="mt-4">
                 <label class="block text-sm font-medium text-gray-700">Total Votes Cast</label>
                 <input type="number" id="${type}-total-votes" class="w-full rounded-md border-gray-300 shadow-sm" readonly required>
-              </div>
-              <div class="mt-4">
-                <label class="block text-sm font-medium text-gray-700">Invalid Votes</label>
-                <input type="number" id="${type}-invalid" class="w-full rounded-md border-gray-300 shadow-sm" required>
-              </div>
-              <div class="mt-4">
-                <label class="block text-sm font-medium text-gray-700">Unused Ballots</label>
-                <input type="number" id="${type}-unused" class="w-full rounded-md border-gray-300 shadow-sm" required>
-              </div>
-              <div class="mt-4">
-                <label class="block text-sm font-medium text-gray-700">Upload Result Sheet Image</label>
-                <input type="file" id="${type}-image" name="${type}-image" accept="image/*" class="block w-full text-sm text-gray-500" required>
-              </div>
-              <div class="mt-6">
-                <button type="button" data-submit="${type}" class="w-full py-2 px-4 rounded-lg shadow-lg text-lg font-bold text-white bg-blue-600 hover:bg-blue-700">
-                  Submit ${electionTypes[type]} Results
-                </button>
-              </div>
-            </div>`;
-          electionSectionsContainer.appendChild(section);
-        }
-
-        // Add event listeners for total votes calculation
-        document.querySelectorAll('.vote-input').forEach(input => {
-          input.addEventListener('input', (e) => {
-            const type = e.target.id.split('-')[0];
-            const section = document.getElementById(`${type}-section`);
-            const totalVotesInput = section.querySelector(`#${type}-total-votes`);
-            let total = 0;
-            section.querySelectorAll('.vote-input').forEach(vInput => {
-              total += parseInt(vInput.value) || 0;
-            });
-            totalVotesInput.value = total;
-          });
-        });
-
-        // toggle
-        document.querySelectorAll('[data-toggle]').forEach(header => {
-          header.addEventListener('click', () => {
-            const id = header.getAttribute('data-toggle');
-            const sec = document.getElementById(id);
-            sec.classList.toggle('open');
-          });
-        });
-
-        // per-section submit
-        document.querySelectorAll('[data-submit]').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const type = btn.getAttribute('data-submit');
-            const votes = {};
-            candidatesData[type].forEach(c => {
-              votes[c.candidate_id] = parseInt(document.getElementById(`${type}-${c.candidate_id}`).value) || 0;
-            });
-            const totalVotesCast = parseInt(document.getElementById(`${type}-total-votes`).value) || 0;
-            const invalidVotes = parseInt(document.getElementById(`${type}-invalid`).value) || 0;
-            const unusedBallots = parseInt(document.getElementById(`${type}-unused`).value) || 0;
-            const imageFile = document.getElementById(`${type}-image`).files[0];
-            const formData = new FormData();
-            formData.append('monitorId', monitorId);
-            formData.append('pollingCenterId', pollingCenterId);
-            formData.append('electionType', type);
-            formData.append('totalVotesCast', totalVotesCast);
-            formData.append('votes', JSON.stringify(votes));
-            formData.append('invalidVotes', invalidVotes);
-            formData.append('unusedBallots', unusedBallots);
-            if (imageFile) formData.append(`${type}-image`, imageFile);
-            try {
-              const res = await fetch(`${URL}/submit-results`, { method: 'POST', body: formData });
-              const data = await res.json();
-              if (res.ok) {
-                showMessage(`${type} results submitted.`);
-                fetchAndRenderSubmissions();
-              } else showMessage(data.message || "Submission failed.", true);
-            } catch {
-              showMessage("Error during submission.", true);
-            }
-          });
-        });
-      };
-
-      // History
-      const fetchAndRenderSubmissions = async () => {
-        submissionHistoryContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">Loading submissions...</p>';
-        try {
-          const res = await fetch(`${URL}/submissions/${monitorId}`);
-          const data = await res.json();
-          if (!data.length) {
-            submissionHistoryContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No submissions yet.</p>';
-            return;
-          }
-          submissionHistoryContainer.innerHTML = data.map(sub => `
-            <div class="bg-white p-4 rounded-lg shadow border border-gray-200">
-              <p><span class="font-semibold">Election:</span> ${sub.election}</p>
-              <p><span class="font-semibold">Timestamp:</span> ${new Date(sub.timestamp).toLocaleString()}</p>
-              <p><span class="font-semibold">Status:</span>
-                <span class="${sub.status === 'Approved' ? 'text-green-600' : sub.status === 'Pending Review' ? 'text-yellow-600' : 'text-red-600'} font-bold">${sub.status}</span>
-              </p>
             </div>
-          `).join('');
-        } catch {
-          submissionHistoryContainer.innerHTML = '<p class="text-sm text-red-500 text-center">Could not load submissions.</p>';
-        }
-      };
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700">Invalid Votes</label>
+              <input type="number" id="${type}-invalid" class="w-full rounded-md border-gray-300 shadow-sm" required>
+            </div>
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700">Unused Ballots</label>
+              <input type="number" id="${type}-unused" class="w-full rounded-md border-gray-300 shadow-sm" required>
+            </div>
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700">Upload Result Sheet Image</label>
+              <input type="file" id="${type}-image" name="${type}-image" accept="image/*" class="block w-full text-sm text-gray-500" required>
+            </div>
+            <div class="mt-6">
+              <button type="button" data-submit="${type}" class="w-full py-2 px-4 rounded-lg shadow-lg text-lg font-bold text-white bg-blue-600 hover:bg-blue-700">
+                Submit ${electionTypes[type]} Results
+              </button>
+            </div>
+          </div>`;
+        electionSectionsContainer.appendChild(section);
+      }
+
+      // Add event listeners for total votes calculation
+      document.querySelectorAll('.vote-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const type = e.target.id.split('-')[0];
+          const section = document.getElementById(`${type}-section`);
+          const totalVotesInput = section.querySelector(`#${type}-total-votes`);
+          let total = 0;
+          section.querySelectorAll('.vote-input').forEach(vInput => {
+            total += parseInt(vInput.value) || 0;
+          });
+          totalVotesInput.value = total;
+        });
+      });
+
+      // toggle collapse
+      document.querySelectorAll('[data-toggle]').forEach(header => {
+        header.addEventListener('click', () => {
+          const id = header.getAttribute('data-toggle');
+          const sec = document.getElementById(id);
+          sec.classList.toggle('open');
+        });
+      });
+
+      // per-section submit with validation
+document.querySelectorAll('[data-submit]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const type = btn.getAttribute('data-submit');
+    const votes = {};
+    candidatesData[type].forEach(c => {
+      votes[c.candidate_id] = parseInt(document.getElementById(`${type}-${c.candidate_id}`).value) || 0;
     });
+    const totalVotesCast = parseInt(document.getElementById(`${type}-total-votes`).value) || 0;
+    const invalidVotes = parseInt(document.getElementById(`${type}-invalid`).value) || 0;
+    const unusedBallots = parseInt(document.getElementById(`${type}-unused`).value) || 0;
+    const grandTotal = totalVotesCast + invalidVotes + unusedBallots;
+    const imageFile = document.getElementById(`${type}-image`).files[0];
+
+    const originalText = btn.textContent; // Save original text
+
+    const submitResults = async () => {
+      btn.textContent = "Submitting..."; // Show submitting
+      btn.disabled = true;
+      const formData = new FormData();
+      formData.append('monitorId', monitorId);
+      formData.append('pollingCenterId', pollingCenterId);
+      formData.append('electionType', type);
+      formData.append('totalVotesCast', totalVotesCast);
+      formData.append('votes', JSON.stringify(votes));
+      formData.append('invalidVotes', invalidVotes);
+      formData.append('unusedBallots', unusedBallots);
+      if (imageFile) formData.append(`${type}-image`, imageFile);
+
+      try {
+        const res = await fetch(`${URL}/submit-results`, { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) {
+          showMessage(`${type} results submitted.`);
+            // ---------------- LOCK AND CLOSE SECTION ----------------
+  const section = document.getElementById(`${type}-section`);
+  
+  // Disable all inputs & file uploads inside
+  section.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+
+  // Collapse the section
+  section.classList.remove('open');
+  
+  // Disable the toggle header so it cannot be reopened
+  const header = document.querySelector(`[data-toggle="${type}-section"]`);
+  if (header) {
+    header.style.pointerEvents = 'none';
+    header.classList.add('opacity-50'); // Optional: visually indicate it's locked
+  }
+      
+          fetchAndRenderSubmissions();
+        } else showMessage(data.message || "Submission failed.", true);
+        
+      } catch {
+        showMessage("Error during submission.", true);
+      } finally {
+        btn.textContent = originalText; // Restore original text
+        btn.disabled = false; // Re-enable
+      }
+    };
+
+    if (grandTotal > registeredVoters) {
+      const message = `The total of votes cast, invalid votes, and unused ballots (${grandTotal}) exceeds the number of registered voters (${registeredVoters}). Do you want to submit anyway?`;
+      showConfirmation(message, submitResults, () => {
+        showMessage("Submission canceled. Please review your numbers.", true);
+      });
+    } else {
+      submitResults();
+    }
+  });
+});
+
+    };
+
+    // History
+    const fetchAndRenderSubmissions = async () => {
+      submissionHistoryContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">Loading submissions...</p>';
+      try {
+        const res = await fetch(`${URL}/submissions/${monitorId}`);
+        const data = await res.json();
+        if (!data.length) {
+          submissionHistoryContainer.innerHTML = '<p class="text-sm text-gray-500 text-center">No submissions yet.</p>';
+          return;
+        }
+        submissionHistoryContainer.innerHTML = data.map(sub => `
+          <div class="bg-white p-4 rounded-lg shadow border border-gray-200">
+            <p><span class="font-semibold">Election:</span> ${sub.election}</p>
+            <p><span class="font-semibold">Timestamp:</span> ${new Date(sub.timestamp).toLocaleString()}</p>
+            <p><span class="font-semibold">Status:</span>
+              <span class="${sub.status === 'Approved' ? 'text-green-600' : sub.status === 'Pending Review' ? 'text-yellow-600' : 'text-red-600'} font-bold">${sub.status}</span>
+            </p>
+          </div>
+        `).join('');
+      } catch {
+        submissionHistoryContainer.innerHTML = '<p class="text-sm text-red-500 text-center">Could not load submissions.</p>';
+      }
+    };
+  });
   </script>
 </body>
 </html>
