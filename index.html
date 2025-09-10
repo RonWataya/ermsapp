@@ -23,6 +23,28 @@
       max-height: 1000px;
       padding: 1rem;
     }
+
+    /* Make buttons more mobile-friendly */
+@media (max-width: 480px) {
+  /* Ensure buttons are full width and text wraps */
+  button[data-submit] {
+    width: 100% !important;  /* full width */
+    font-size: 16px;          /* slightly smaller font if needed */
+    padding: 12px 0;          /* taller buttons for easy tapping */
+    white-space: normal;      /* allow text wrap */
+  }
+
+  /* Optional: make vote inputs full width too */
+  input.vote-input {
+    width: 100% !important;
+  }
+
+  /* Reduce header spacing on small screens */
+  #election-sections .collapse-section {
+    padding: 0.5rem !important;
+  }
+}
+
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
