@@ -16,7 +16,8 @@
     .hidden { display: none; }
     .collapse-section {
       max-height: 0;
-      overflow: hidden;
+      overflow: hidden; /* Keep this */
+      overflow-y: auto; /* Add this line to enable vertical scrolling */
       transition: max-height 0.3s ease-out, padding 0.3s ease-out;
     }
     .collapse-section.open {
@@ -36,16 +37,16 @@
 
   /* Optional: make vote inputs full width too */
   input.vote-input {
-    width: 100% !important;
+    width: 35% !important;
   }
 
   /* Reduce header spacing on small screens */
   #election-sections .collapse-section {
-    padding: 0.5rem !important;
+    padding: 0.3rem !important;
   }
 }
+</style>
 
-  </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
   <div id="app-container" class="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden md:h-[90vh] flex flex-col">
