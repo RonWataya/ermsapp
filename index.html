@@ -419,14 +419,15 @@ document.querySelectorAll('[data-submit]').forEach(btn => {
       }
     };
 
-    if (grandTotal > registeredVoters) {
-      const message = `The total of votes cast, invalid votes, and unused ballots (${grandTotal}) exceeds the number of registered voters (${registeredVoters}). Do you want to submit anyway?`;
-      showConfirmation(message, submitResults, () => {
-        showMessage("Submission canceled. Please review your numbers.", true);
-      });
-    } else {
-      submitResults();
-    }
+   if (grandTotal !== registeredVoters) {
+  const discrepancyType = grandTotal > registeredVoters ? 'exceeds' : 'is less than';
+  const message = `The total of votes cast, invalid votes, and unused ballots (${grandTotal}) ${discrepancyType} the number of registered voters (${registeredVoters}). Do you want to submit anyway?`;
+  showConfirmation(message, submitResults, () => {
+    showMessage("Submission canceled. Please review your numbers.", true);
+  });
+} else {
+  submitResults();
+}
   });
 });
 
